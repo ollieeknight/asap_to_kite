@@ -14,7 +14,7 @@ In rare cases, you may have stained with both TSA and TSB antibodies. In this ca
 
 ### One sample, one directory
 
-The most basic use case is when we have one library sequenced one. From the demultiplexing,
+The most basic use case is when we have one library sequenced once. From the demultiplexing,
 we should see files that look like this:
 
 ```
