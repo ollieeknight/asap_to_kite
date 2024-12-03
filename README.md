@@ -1,115 +1,124 @@
 # ASAP to kite
-A script to process fastqs from ASAP-seq for downstream processing with kite (kallisto | bustools). 
+This script was originally developed by [Caleb Lareau](https://www.mskcc.org/research/ski/labs/caleb-lareau), but this repo is maintained by [Oliver Knight](https://immunologie.charite.de/metas/person/person/address_detail/oliver_knight/).  
 
-The options are designed to mirror that of CellRanger/CellRanger-ATAC for convenience in processing.
+It describes a script (`asap_to_kite.py`) which converts FASTQ files generated from ASAP-seq for downstream processing with kite (kallisto | bustools). 
 
 ## About
-
-There are two scripts in this repository. First, `asap_to_kite_vX.py` (where `X` is an integer) represents the tool most commonly used for the simple reformatting. This will work most of the time. 
-
-In rare cases, you may have stained with both TSA and TSB antibodies. In this case, we have the `asap_to_kite_A_B.py` to separate out the two using the different PCR handles. For this to work, we do require the pre-identification of the valid barcodes for both TSA and TSB; hence, additional parameters in the `-a` and `-b` flags. 
-
 
 ## Sample use cases
 
 ### One sample, one directory
 
-The most basic use case is when we have one library sequenced one. From the demultiplexing,
+The most basic use case is when we have one library sequenced once. From the demultiplexing,
 we should see files that look like this:
 
-```
-test/data1/test1_S1_L001_R1_001.fastq.gz
-test/data1/test1_S1_L001_R2_001.fastq.gz
-test/data1/test1_S1_L001_R3_001.fastq.gz
-test/data1/test1_S1_L002_R1_001.fastq.gz
-test/data1/test1_S1_L002_R2_001.fastq.gz
-test/data1/test1_S1_L002_R3_001.fastq.gz
-test/data1/test1_S1_L003_R1_001.fastq.gz
-test/data1/test1_S1_L003_R2_001.fastq.gz
-test/data1/test1_S1_L003_R3_001.fastq.gz
-test/data1/test1_S1_L004_R1_001.fastq.gz
-test/data1/test1_S1_L004_R2_001.fastq.gz
-test/data1/test1_S1_L004_R3_001.fastq.gz
+```sh
+git clone https://github.com/ollieeknight/asap_to_kite
+
+cd asap_to_kite
+
+tree tests/data1/
+
+tests/data1/
+├── test1_S1_L003_R1_001.fastq.gz
+├── test1_S1_L003_R2_001.fastq.gz
+├── test1_S1_L003_R3_001.fastq.gz
+
+├── test1_S1_L004_R1_001.fastq.gz
+├── test1_S1_L004_R2_001.fastq.gz
+├── test1_S1_L004_R3_001.fastq.gz
+
+├── test2_S1_L001_R1_001.fastq.gz
+├── test2_S1_L001_R2_001.fastq.gz
+├── test2_S1_L001_R3_001.fastq.gz
+
+├── test2_S1_L002_R1_001.fastq.gz
+├── test2_S1_L002_R2_001.fastq.gz
+└── test2_S1_L002_R3_001.fastq.gz
 ```
 
-Here, the sequencing run is in the folder `test/data1` and we are interested in the `test1` sample. 
-
-We can process these fastqs:
+We can process these fastqs in one line:
 
 ```
-python asap_to_kite_v1.py -f test/data1 -s test1 -o one_one
-```
+python asap_to_kite.py --fastq-folder tests/data1 --sample-prefix test1 --output-folder single_sample --output-name test1 --cores 2
 
-Here, the `-s` specifies the `sample name`; `-f` specifies the `fastq folder`; `-o` specifies the `output` naming convention.
+2024-12-03 10:34:06,537 - INFO - ASAP-to-kite, version 3
+2024-12-03 10:34:06,537 - INFO - Configuration for analysis:
+2024-12-03 10:34:06,538 - INFO - FASTQ folder                            : tests/data1
+2024-12-03 10:34:06,538 - INFO - Sample name                             : test1
+2024-12-03 10:34:06,538 - INFO - Output folder                           : single_sample
+2024-12-03 10:34:06,538 - INFO - Output name                             : test1
+2024-12-03 10:34:06,538 - INFO - Number of cores                         : 2
+2024-12-03 10:34:06,538 - INFO - Number of reads to process at a time    : 10000000
+2024-12-03 10:34:06,538 - INFO - Reverse complement                      : True
+2024-12-03 10:34:06,538 - INFO - TotalSeq format                         : TotalSeq-A
+2024-12-03 10:34:06,551 - INFO - Processing these fastq samples:
+2024-12-03 10:34:06,551 - INFO - tests/data1/test1_S1_L003
+2024-12-03 10:34:06,551 - INFO - tests/data1/test1_S1_L004
+2024-12-03 10:34:11,940 - INFO - Conversion completed successfully
+```
 
 ### One sample, multiple directories 
 
 If multiple sequencing rounds are performed, we can supply all sequencing libraries as a comma-separated list:
 
 ```
-python asap_to_kite_v1.py -f test/data1,test/data2 -s test1 -o one_many
-```
-
-### One sample, named multiple ways, in multiple directories
-
-Suppose that the sequencing library is named two different ways over the two sequencing runs. 
-We can stack the comma-separated nature of the sample names and the sequencing runs to 
-synthesize the libraries
-
-```
-python asap_to_kite_v1.py -f test/data1,test/data2 -s test1,test2 -o many_many
-```
-
-### Write to a different output destination
-
-Finally, just to showcase that we can write these files out to a different path:
-
-```
-python asap_to_kite_v1.py -f test/data1,test/data2 -s test1,test2 -o test/many_many
+python asap_to_kite.py --fastq-folder tests/data1,tests/data2 --sample-prefix test2,test2 --output-folder single_sample --output-name test1 --cores 2
+2024-12-03 10:38:29,545 - INFO - ASAP-to-kite, version 3
+2024-12-03 10:38:29,546 - INFO - Configuration for analysis:
+2024-12-03 10:38:29,546 - INFO - FASTQ folder                            : tests/data1,tests/data2
+2024-12-03 10:38:29,546 - INFO - Sample name                             : test2,test2
+2024-12-03 10:38:29,546 - INFO - Output folder                           : single_sample
+2024-12-03 10:38:29,546 - INFO - Output name                             : test1
+2024-12-03 10:38:29,546 - INFO - Number of cores                         : 2
+2024-12-03 10:38:29,546 - INFO - Number of reads to process at a time    : 10000000
+2024-12-03 10:38:29,546 - INFO - Reverse complement                      : True
+2024-12-03 10:38:29,546 - INFO - TotalSeq format                         : TotalSeq-A
+2024-12-03 10:38:29,547 - INFO - Processing these fastq samples:
+2024-12-03 10:38:29,547 - INFO - tests/data1/test2_S1_L002
+2024-12-03 10:38:29,547 - INFO - tests/data1/test2_S1_L001
+2024-12-03 10:38:29,547 - INFO - tests/data1/test2_S1_L002
+2024-12-03 10:38:29,547 - INFO - tests/data1/test2_S1_L001
+2024-12-03 10:38:29,547 - INFO - tests/data2/test2_S1_L003
+2024-12-03 10:38:29,547 - INFO - tests/data2/test2_S1_L003
+2024-12-03 10:38:45,450 - INFO - Conversion completed successfully
 ```
 
 ## Important
 
-This code works for one biological sample at a time. If multiple samples are supplied in the 
-command line execution, then they will be merged (under the assumption that they were
-called different things). Execute the code sequentially for each sample in the event of 
-multiple biological samples. 
-
+This code works for one biological sample at a time. If multiple samples are supplied in the command line execution, then they will be merged (under the assumption that they were called different things). Execute the code sequentially for each sample in the event of multiple biological samples. 
 
 ## Options
 
 ```
-python asap_to_kite_v1.py --help
+python asap_to_kite.py --help
 ```
 
 yields
 
 ```
-Usage: asap_to_kite_v1.py [options] [inputs] Script to reformat raw sequencing 
-data from CellRanger-ATAC demultiplexing to a format 
-compatible with kite (kallisto|bustools)
+Usage: asap_to_kite.py [OPTIONS]
 
 Options:
-  -h, --help            show this help message and exit
-  -f FASTQS, --fastqs=FASTQS
-                        Path of folder created by mkfastq or bcl2fastq; can be
-                        comma separated that will be collapsed into one
-                        output.
-  -s SAMPLE, --sample=SAMPLE
-                        Prefix of the filenames of FASTQs to select; can be
-                        comma separated that will be collapsed into one output
-  -o ID, --id=ID        A unique run id, used to name output.
-  -c CORES, --cores=CORES
-                        Number of cores for parallel processing. Default = 4.
-  -n NREADS, --nreads=NREADS
-                        Maximum number of reads to process in one iteration.
-                        Decrease this if in a low memory environment (e.g.
-                        laptop). Default = 10,000,000.
-  -r, --no-rc-R2        By default, the reverse complement of R2 (barcode) is
-                        performed (when sequencing with, for example, the
-                        NextSeq). Throw this flag to keep R2 as is-- no
-                        reverse complement (rc).
+  --fastq-folder, -ff TEXT        Path(s) to folder(s) created by mkfastq or
+                                  bcl2fastq. Multiple paths can be comma-
+                                  separated.  [required]
+  --sample-prefix, -sp TEXT       Prefix(es) of the filenames of fastq_folder
+                                  to select. Multiple prefixes can be comma-
+                                  separated.  [required]
+  --output-folder, -of TEXT       Path to the output folder where results will
+                                  be saved. Default is 'output'.
+  --output-name, -on TEXT         Unique run ID used to name the output files.
+                                  Default is 'asap2kite'.
+  --totalseq-conjugation, -tc TEXT
+                                  Antibody conjugation type. Options are
+                                  'TotalSeq-A' (default) or 'TotalSeq-B'.
+  --cores, -c INTEGER             Number of CPU cores for parallel processing.
+                                  Default is 4.
+  --nreads, -nr INTEGER           Maximum number of reads to process in one
+                                  iteration. Default is 10,000,000.
+  --no-rc-R2, -nrr2               Disable reverse complement of R2 (barcode).
+                                  Default is to perform reverse complement.
+  --example                       Show example usage.
+  --help                          Show this message and exit.
 ```
-
-<br><br>
-
